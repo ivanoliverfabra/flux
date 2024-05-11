@@ -7,9 +7,13 @@ The Flux API Library provides a convenient way to interact with the Flux API for
 To install the Flux API Library, you can use npm or yarn:
 
 ```bash
-npm install flux-api-library
+npm install @ivanoliverfabra/flux
 # or
-yarn add flux-api-library
+yarn add @ivanoliverfabra/flux
+# or
+pnpm add @ivanoliverfabra/flux
+# or
+bun add @ivanoliverfabra/flux
 ```
 
 ## Usage
@@ -18,15 +22,15 @@ yarn add flux-api-library
 
 To use the Flux API Library, first import it into your project:
 
-```bash
-import Flux from 'flux-api-library';
+```ts
+import Flux from "@ivanoliverfabra/flux";
 ```
 
 Then, create an instance of the Flux class with optional configuration options:
 
 ```ts
 const flux = new Flux({
-  apiUrl: "https://api.example.com",
+  apiUrl: "https://api.fabra.live",
   apiVersion: "v1",
 });
 ```
