@@ -1,3 +1,42 @@
+import axios from "axios";
+import { useCallback, useEffect, useState } from 'react';
+
+type PromiseType<T> = T extends Promise<infer U> ? U : T;
+
+export const useFlux = <T extends keyof FluxI, K extends keyof FluxI[T]>(
+	fluxType: T,
+  fluxFunction: K,
+	fetchOnMount: boolean = true,
+  // @ts-ignore
+  args?: Parameters<FluxI[T][K]>,
+) => {
+  // @ts-ignore
+  const [response, setResponse] = useState<PromiseType<ReturnType<FluxI[T][K]>> | null>(null);
+  const [loading, setLoading] = useState<boolean>(fetchOnMount);
+
+  // @ts-ignore
+  const fetchData = useCallback(async (...newArgs: Parameters<FluxI[T][K]>) => {
+    setLoading(true);
+    try {
+      const flux = new Flux();
+      const finalArgs = newArgs.length ? newArgs || [] : args || [];
+
+      // @ts-ignore
+      const response = await flux[fluxType][fluxFunction](...finalArgs);
+      setResponse(response);
+    } catch (error: any) {
+      setResponse({ status: "error", message: error.message } as any);
+    } finally {
+      setLoading(false);
+    }
+  }, [args, fluxType, fluxFunction]);
+
+  useEffect(() => {
+		if (fetchOnMount) fetchData(...(args || [] as any));
+  }, []);
+
+  return { response, loading, fetch: fetchData };
+};
 type Wallet = {
 	id: number;
 	address: string;
@@ -36,7 +75,13 @@ type NameLog = {
 	created: string;
 }
 
-type Status = "success" | "error";
+type Stats = {
+	totalTransactions: number;
+	totalWallets: number;
+	totalNames: number;
+	totalCirculation: number;
+}
+
 type SuccessResponse<T> = { status: "success"; data: T };
 export type ErrorResponse = { status: "error"; message: string };
 export type PaginationResponse<T> = SuccessResponse<T> & { count: number; total: number; };
@@ -53,7 +98,7 @@ export interface FluxWallets {
 
 export interface FluxTransactions {
 	get: (pagination?: PaginationProps) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
-	create: (privateKey: string, to: string, amount: number, metadata: { [key: string]: any }) => Promise<SuccessResponse<Transaction>> | Promise<ErrorResponse>;
+	create: (privateKey: string, to: string, amount: number, metadata?: { [key: string]: any }) => Promise<SuccessResponse<Transaction>> | Promise<ErrorResponse>;
 	latest: (pagination?: PaginationProps) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
 	getById: (id: number) => Promise<SuccessResponse<Transaction>> | Promise<ErrorResponse>;
 }
@@ -71,10 +116,15 @@ export interface FluxNames {
 	isAvailable: (name: string) => Promise<SuccessResponse<{ available: boolean }>> | Promise<ErrorResponse>;
 }
 
+export interface FluxStats {
+	get: () => Promise<Stats>;
+}
+
 export interface FluxI {
 	wallets: FluxWallets;
 	transactions: FluxTransactions;
 	names: FluxNames;
+	stats: FluxStats;
 }
 
 export type FluxOptions = {
@@ -121,42 +171,44 @@ export default class Flux implements FluxI {
 		isAvailable: async (name) => this.get(`names/${name}/check`),
 	}
 
+	public stats: FluxStats = {
+		get: async () => this.get("stats").catch(() => ({ totalTransactions: 0, totalWallets: 0, totalNames: 0, totalCirculation: 0 }))
+	};
+
 	private getApiUrl(path: string): string {
 		return `${this.API_URL}/api/${this.API_VERSION}/${path}`;
 	}
 
 	private async get(path: string, pagination?: PaginationProps) {
-		try {
+    try {
 			const url = new URL(this.getApiUrl(path));
 			if (pagination?.limit) url.searchParams.append("limit", pagination.limit.toString());
 			if (pagination?.page) url.searchParams.append("page", pagination.page.toString());
 
-			const response = await fetch(url.toString(), {
+			const response = await axios.get(url.toString(), {
 				headers: {
 					"Content-Type": "application/json",
 				},
 			});
-			return response.json();
-		} catch (error: any) {
+			return response.data;
+    } catch (error: any) {
 			console.error(error);
 			return { status: "error", message: error.message };
-		}
+    }
 	}
 
-	private async post(path: string, data: any = {}, headers: any = {}) {
-		try {
-			const response = await fetch(this.getApiUrl(path), {
-				method: "POST",
+private async post(path: string, data: any = {}, headers: any = {}) {
+    try {
+			const response = await axios.post(this.getApiUrl(path), data, {
 				headers: {
 					"Content-Type": "application/json",
 					...headers,
 				},
-				body: JSON.stringify(data),
 			});
-			return response.json();
-		} catch (error: any) {
+			return response.data;
+    } catch (error: any) {
 			console.error(error);
 			return { status: "error", message: error.message };
-		}
-	}
+    }
+}
 }
