@@ -38,7 +38,7 @@ type NameLog = {
 
 type Status = "success" | "error";
 type SuccessResponse<T> = { status: "success"; data: T };
-type ErrorResponse = { status: "error"; message: string };
+export type ErrorResponse = { status: "error"; message: string };
 export type PaginationResponse<T> = SuccessResponse<T> & { count: number; total: number; };
 type PaginationProps = { limit?: number; page?: number; };
 

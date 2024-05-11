@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --minify --dts --format cjs --outDir dist",
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts",
+    "typescript": "tsc"
   },
   "keywords": [],
   "author": "",

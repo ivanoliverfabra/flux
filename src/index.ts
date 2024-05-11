@@ -44,7 +44,7 @@ export default class Flux implements FluxI {
 		return `${this.API_URL}/api/${this.API_VERSION}/${path}`;
 	}
 
-	private async get(path: string, pagination?: PaginationProps): Promise<any> {
+	private async get(path: string, pagination?: PaginationProps) {
 		try {
 			const url = new URL(this.getApiUrl(path));
 			if (pagination?.limit) url.searchParams.append("limit", pagination.limit.toString());
@@ -62,7 +62,7 @@ export default class Flux implements FluxI {
 		}
 	}
 
-	private async post(path: string, data: any = {}, headers: any = {}): Promise<any> {
+	private async post(path: string, data: any = {}, headers: any = {}) {
 		try {
 			const response = await fetch(this.getApiUrl(path), {
 				method: "POST",
