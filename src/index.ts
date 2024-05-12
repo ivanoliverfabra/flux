@@ -55,7 +55,8 @@ export interface FluxWallets {
 	get: (pagination?: PaginationProps) => Promise<PaginationResponse<Omit<Wallet, "privateKey">[]>> | Promise<ErrorResponse>;
 	create: () => Promise<SuccessResponse<WalletCreate>> | Promise<ErrorResponse>;
 	rich: (pagination?: PaginationProps) => Promise<PaginationResponse<Omit<Wallet, "privateKey">[]>> | Promise<ErrorResponse>;
-	getByAddress: (addresses: string | string[]) => Promise<SuccessResponse<Omit<Wallet, "privateKey">>> | Promise<ErrorResponse>;
+	getByAddress: (addresses: string | string[]) => 
+  typeof addresses extends string ? Promise<SuccessResponse<Omit<Wallet, "privateKey">>> | Promise<ErrorResponse> : Promise<SuccessResponse<Omit<Wallet, "privateKey">[]>> | Promise<ErrorResponse>;
 	getTransactions: (address: string, pagination?: PaginationProps) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
 	getNames: (address: string) => Promise<SuccessResponse<Omit<Name, 'wallet'>[]>> | Promise<ErrorResponse>;
 }
