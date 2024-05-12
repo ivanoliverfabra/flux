@@ -1,42 +1,6 @@
 import axios from "axios";
-import { useCallback, useEffect, useState } from 'react';
+export { useFlux } from "./react";
 
-type PromiseType<T> = T extends Promise<infer U> ? U : T;
-
-export const useFlux = <T extends keyof FluxI, K extends keyof FluxI[T]>(
-	fluxType: T,
-  fluxFunction: K,
-	fetchOnMount: boolean = true,
-  // @ts-ignore
-  args?: Parameters<FluxI[T][K]>,
-) => {
-  // @ts-ignore
-  const [response, setResponse] = useState<PromiseType<ReturnType<FluxI[T][K]>> | null>(null);
-  const [loading, setLoading] = useState<boolean>(fetchOnMount);
-
-  // @ts-ignore
-  const fetchData = useCallback(async (...newArgs: Parameters<FluxI[T][K]>) => {
-    setLoading(true);
-    try {
-      const flux = new Flux();
-      const finalArgs = newArgs.length ? newArgs || [] : args || [];
-
-      // @ts-ignore
-      const response = await flux[fluxType][fluxFunction](...finalArgs);
-      setResponse(response);
-    } catch (error: any) {
-      setResponse({ status: "error", message: error.message } as any);
-    } finally {
-      setLoading(false);
-    }
-  }, [args, fluxType, fluxFunction]);
-
-  useEffect(() => {
-		if (fetchOnMount) fetchData(...(args || [] as any));
-  }, []);
-
-  return { response, loading, fetch: fetchData };
-};
 type Wallet = {
 	id: number;
 	address: string;
@@ -91,7 +55,7 @@ export interface FluxWallets {
 	get: (pagination?: PaginationProps) => Promise<PaginationResponse<Omit<Wallet, "privateKey">[]>> | Promise<ErrorResponse>;
 	create: () => Promise<SuccessResponse<WalletCreate>> | Promise<ErrorResponse>;
 	rich: (pagination?: PaginationProps) => Promise<PaginationResponse<Omit<Wallet, "privateKey">[]>> | Promise<ErrorResponse>;
-	getByAddress: (address: string) => Promise<SuccessResponse<Omit<Wallet, "privateKey">>> | Promise<ErrorResponse>;
+	getByAddress: (addresses: string | string[]) => Promise<SuccessResponse<Omit<Wallet, "privateKey">>> | Promise<ErrorResponse>;
 	getTransactions: (address: string, pagination?: PaginationProps) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
 	getNames: (address: string) => Promise<SuccessResponse<Omit<Name, 'wallet'>[]>> | Promise<ErrorResponse>;
 }
@@ -145,7 +109,15 @@ export default class Flux implements FluxI {
 		get: async (pagination) => this.get("wallets", pagination),
 		create: async () => this.post("wallets"),
 		rich: async (pagination) => this.get("wallets/rich", pagination),
-		getByAddress: async (address) => this.get(`wallets/${address}`),
+		getByAddress: async (addresses) => {
+			console.log(addresses);
+			if (Array.isArray(addresses)) {
+				addresses = addresses.join(",");
+				return this.get(`wallets`, undefined, { addresses });
+			}
+			return this.get(`wallets/${addresses}`);
+			
+		},
 		getTransactions: async (address, pagination) => this.get(`wallets/${address}/transactions`, pagination),
 		getNames: async (address) => this.get(`wallets/${address}/names`),
 	};
@@ -179,11 +151,16 @@ export default class Flux implements FluxI {
 		return `${this.API_URL}/api/${this.API_VERSION}/${path}`;
 	}
 
-	private async get(path: string, pagination?: PaginationProps) {
+	private async get(path: string, pagination?: PaginationProps, searchParams?: { [key: string]: any }) {
     try {
 			const url = new URL(this.getApiUrl(path));
 			if (pagination?.limit) url.searchParams.append("limit", pagination.limit.toString());
 			if (pagination?.page) url.searchParams.append("page", pagination.page.toString());
+			if (searchParams) {
+				for (const key in searchParams) {
+					url.searchParams.append(key, searchParams[key]);
+				}
+			}
 
 			const response = await axios.get(url.toString(), {
 				headers: {
