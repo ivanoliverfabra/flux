@@ -62,9 +62,9 @@ export interface FluxWallets {
 }
 
 export interface FluxTransactions {
-	get: (pagination?: PaginationProps) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
+	get: (pagination?: PaginationProps, addresses?: string[]) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
 	create: (privateKey: string, to: string, amount: number, metadata?: { [key: string]: any }) => Promise<SuccessResponse<Transaction>> | Promise<ErrorResponse>;
-	latest: (pagination?: PaginationProps) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
+	latest: (pagination?: PaginationProps, addresses?: string[]) => Promise<PaginationResponse<Transaction[]>> | Promise<ErrorResponse>;
 	getById: (id: number) => Promise<SuccessResponse<Transaction>> | Promise<ErrorResponse>;
 }
 
@@ -97,6 +97,13 @@ export type FluxOptions = {
 	apiVersion?: string;
 };
 
+export type FluxFunctionParams<T> = T extends (...args: infer P) => any ? P : never;
+
+export interface FluxResponse<T = any> {
+	status: "success" | "error";
+	data: T;
+}
+
 export default class Flux implements FluxI {
 	public API_URL = "https://api.fabra.live";
 	public API_VERSION = "v1";
@@ -111,7 +118,6 @@ export default class Flux implements FluxI {
 		create: async () => this.post("wallets"),
 		rich: async (pagination) => this.get("wallets/rich", pagination),
 		getByAddress: async (addresses) => {
-			console.log(addresses);
 			if (Array.isArray(addresses)) {
 				addresses = addresses.join(",");
 				return this.get(`wallets`, undefined, { addresses });
@@ -124,10 +130,10 @@ export default class Flux implements FluxI {
 	};
 
 	public transactions: FluxTransactions = {
-		get: async (pagination) => this.get("transactions", pagination),
+		get: async (pagination, addresses) => this.get("transactions", pagination, { addresses: addresses?.join(",") }),
 		create: async (privateKey, to, amount, metadata) =>
 			this.post("transactions", { privateKey, to, amount, metadata }),
-		latest: async (pagination) => this.get("transactions/latest", pagination),
+		latest: async (pagination, addresses) => this.get("transactions/latest", pagination, { addresses: addresses?.join(",") }),
 		getById: async (id) => this.get(`transactions/${id}`),
 	};
 

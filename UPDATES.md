@@ -8,6 +8,10 @@
 
 - Updated useFlux React Hook (updated usage and props)
 
-# v1.0.6
+# v1.0.7
 
 - Updated types to include arrays or single object (getWalleyByAddress)
+
+# v1.0.8
+
+- Added filtering transactions by wallet addresses
